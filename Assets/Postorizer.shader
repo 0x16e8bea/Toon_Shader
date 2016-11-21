@@ -81,7 +81,7 @@ Shader "Toon/Postorizer" {
 					atten = 1 / length(vertexToLight);
 				}
 
-				half diffuse = atten * max(0, dot(i.normalDir, lightDir)) * atten * _LightColor0;
+				half diffuse = max(0, dot(i.normalDir, lightDir));
 
 				half step = 1/ _Steps;
 				half level = floor(diffuse / step);
