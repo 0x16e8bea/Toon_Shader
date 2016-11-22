@@ -1,4 +1,6 @@
 ﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
 Shader "Toon/Postorizer" {
@@ -74,14 +76,14 @@ Shader "Toon/Postorizer" {
 					atten = 1.0;
 				}
 				else {
-					float3 vertexToLight = _WorldSpaceLightPos0.xyz - i.posWorld.xyz;
+					float3 vertexToLight = _WorldSpaceLightPos0.xyz - i.posWorld;
 					lightDir = normalize(vertexToLight);
 										
 					float dist = length(vertexToLight);
 					atten = 1 / length(vertexToLight);
 				}
 
-				half diffuse = max(0, dot(i.normalDir, lightDir));
+				half diffuse = max(0, dot(i.normalDir, lightDir)) * min(1.0, _LightColor0 * atten);
 
 				half step = 1/ _Steps;
 				half level = floor(diffuse / step);
@@ -93,10 +95,10 @@ Shader "Toon/Postorizer" {
 
 				// Apply diffuse and antialias the transitions by checking if the current pixel (diffuse) is within an epsilon (E).
 				if (level > step) {
-					c = lerp(step * level , step * (level + 1), smoothstep(step * level - E, step * level + E, diffuse)) * c;
+					c = lerp(step * level * min(1.0, _LightColor0), step * (level + 1), smoothstep(step * level - E, step * level + E, diffuse)) * c * min(1.0, _LightColor0);
 				}
 				else {
-					c = 1 * step * c;
+					c = 1 * step * c * min(1.0, _LightColor0);
 				}
 
 				#endif
