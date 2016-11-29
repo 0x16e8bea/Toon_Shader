@@ -12,6 +12,40 @@
 		}
 	
 		SubShader{
+			Tags{ "RenderType" = "Opaque" }
+			Pass {
+			Name "DEFERRED"
+			Tags{ "LightMode" = "Deferred" }
+
+			CGPROGRAM
+#pragma target 3.0
+#pragma exclude_renderers nomrt
+
+
+			// -------------------------------------
+
+#pragma shader_feature _NORMALMAP
+#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+#pragma shader_feature _EMISSION
+#pragma shader_feature _METALLICGLOSSMAP
+#pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+#pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
+#pragma shader_feature ___ _DETAIL_MULX2
+#pragma shader_feature _PARALLAXMAP
+
+#pragma multi_compile ___ UNITY_HDR_ON
+#pragma multi_compile ___ LIGHTMAP_ON
+#pragma multi_compile ___ DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE
+#pragma multi_compile ___ DYNAMICLIGHTMAP_ON
+
+#pragma vertex vertDeferred
+#pragma fragment fragDeferred
+
+#include "UnityStandardCore.cginc"
+
+			ENDCG
+		}
+		
 
 			Pass {
 			Tags { "LightMode" = "ForwardAdd"}
@@ -21,6 +55,7 @@
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile ANTIALIASING_ON ANTIALIASING_OFF fwdadd
+			#include "UnityCG.cginc"
 
 			struct vertexIn {
 				float4 vertex : POSITION;
@@ -30,14 +65,14 @@
 
 			struct vertexOut {
 				float4 position : SV_POSITION;
-				float4 color : COLOR; 
+				float4 color : COLOR;
 				float4 tex : TEXCOORD0;
 				float3 normalDir : TEXCOORD1;
 				float4 posWorld : TEXCOORD2;
 				float4 posLight : TEXCOORD3;
 				float4 vertex : TEXCOORD4;
 			};
-			
+
 			uniform float4x4 unity_WorldToLight;
 			uniform sampler2D _LightTextureB0;
 			uniform float4 _LightColor0;
@@ -48,7 +83,7 @@
 			uniform float _AttenFactor;
 			uniform float _Softness;
 			uniform int _Ambience;
-			uniform float3 _Transform;			
+			uniform float3 _Transform;
 			uniform float4 _Color;
 			uniform sampler2D _MainTex;
 
@@ -67,6 +102,7 @@
 				return o;
 			}
 
+
 			float4 frag(vertexOut i) : COLOR {
 				float3 lightDir;
 				float atten;
@@ -82,9 +118,9 @@
 					viewDir = normalize(_WorldSpaceCameraPos.xyz - i.posWorld);
 
 					lightDir = normalize(vertexToLight);
-										
+
 					float dist = length(vertexToLight);
-					atten = 1/ dist;
+					atten = 1 / dist;
 
 				}
 
@@ -94,7 +130,7 @@
 				float4 c = tex2D(_MainTex, i.tex.xy) * _LightColor0 * _Color;
 
 
-				half step = 1/ _Steps;
+				half step = 1 / _Steps;
 				half level = floor((diffuse + specular) / step);
 				half E = fwidth(diffuse + specular);
 
@@ -103,7 +139,7 @@
 
 				// Apply diffuse and antialias the transitions by checking if the current pixel (diffuse) is within an epsilon (E).
 				if (level > step) {
-					
+
 					c = lerp(step * level, step * (level + 1), smoothstep(step * level - E, step * level + E + _Softness, pow(diffuse + specular, 1.1))) * c;
 				}
 				else {
@@ -125,5 +161,6 @@
 
 			}
 		}
+
 			FallBack "Diffuse"
 }

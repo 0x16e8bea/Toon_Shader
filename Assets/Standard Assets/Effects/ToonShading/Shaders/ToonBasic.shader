@@ -2,62 +2,44 @@ Shader "Toon/Basic" {
 	Properties {
 		_Color ("Main Color", Color) = (.5,.5,.5,1)
 		_MainTex ("Base (RGB)", 2D) = "white" {}
-		_ToonShade ("ToonShader Cubemap(RGB)", CUBE) = "" { }
 	}
 
 
 	SubShader {
 		Tags { "RenderType"="Opaque" }
-		Pass {
-			Name "BASE"
-			Cull Off
-			
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
-			#pragma multi_compile_fog
 
-			#include "UnityCG.cginc"
+		Pass{
+				Name "DEFERRED"
+				Tags{ "LightMode" = "Deferred" }
 
-			sampler2D _MainTex;
-			samplerCUBE _ToonShade;
-			float4 _MainTex_ST;
-			float4 _Color;
+				CGPROGRAM
+#pragma target 3.0
+#pragma exclude_renderers nomrt
 
-			struct appdata {
-				float4 vertex : POSITION;
-				float2 texcoord : TEXCOORD0;
-				float3 normal : NORMAL;
-			};
-			
-			struct v2f {
-				float4 pos : SV_POSITION;
-				float2 texcoord : TEXCOORD0;
-				float3 cubenormal : TEXCOORD1;
-				UNITY_FOG_COORDS(2)
-			};
 
-			v2f vert (appdata v)
-			{
-				v2f o;
-				o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
-				o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
-				o.cubenormal = mul (UNITY_MATRIX_MV, float4(v.normal,0));
-				UNITY_TRANSFER_FOG(o,o.pos);
-				return o;
+				// -------------------------------------
+
+#pragma shader_feature _NORMALMAP
+#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+#pragma shader_feature _EMISSION
+#pragma shader_feature _METALLICGLOSSMAP
+#pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+#pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
+#pragma shader_feature ___ _DETAIL_MULX2
+#pragma shader_feature _PARALLAXMAP
+
+#pragma multi_compile ___ UNITY_HDR_ON
+#pragma multi_compile ___ LIGHTMAP_ON
+#pragma multi_compile ___ DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE
+#pragma multi_compile ___ DYNAMICLIGHTMAP_ON
+
+#pragma vertex vertDeferred
+#pragma fragment fragDeferred
+
+#include "UnityStandardCore.cginc"
+
+				ENDCG
 			}
-
-			fixed4 frag (v2f i) : SV_Target
-			{
-				fixed4 col = _Color * tex2D(_MainTex, i.texcoord);
-				fixed4 cube = texCUBE(_ToonShade, i.cubenormal);
-				fixed4 c = fixed4(2.0f * cube.rgb * col.rgb, col.a);
-				UNITY_APPLY_FOG(i.fogCoord, c);
-				return c;
-			}
-			ENDCG			
-		}
 	} 
 
-	Fallback "VertexLit"
 }
