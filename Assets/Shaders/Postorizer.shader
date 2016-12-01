@@ -119,7 +119,7 @@ Shader "Toon/Postorizer" {
 
 			}
 
-			// Set diffuse to maximum 0.99 (1.0 produce artifacts due to light step calculations) and add highlights.  
+			// Set diffuse to maximum 0.99 (1.0 produce artifacts due to light step calculations) and add highlights (maximum value 1 -> n4LightAtten * scalar).  
 			half diffuse = min(0.99, float4(n4LightDiffuse, 1)) * max(1, min(_HighlightSteps / _Steps + 1, n4LightAtten * _HighlightFactor));
 			half specular = n4LightSpecular;
 
@@ -134,7 +134,7 @@ Shader "Toon/Postorizer" {
 
 			// Apply diffuse and antialias the transitions by checking if the current pixel (diffuse) is within an epsilon (E).
 			if (level > step) {
-				c = lerp(step * level, step * (level + 1), smoothstep(step * level - E, step * level + E + _Softness, pow(diffuse + specular, 1.1))) * c + (min(1, _ShadowTint) * step * (level - _Steps)) + (min(1, _HighlightTint) * step * (level));
+				c = lerp(step * level, step * (level + 1), smoothstep(step * level - E, step * level + E + _Softness, (diffuse + specular))) * c + (min(1, _ShadowTint) * step * (level - _Steps)) + (min(1, _HighlightTint) * step * (level));
 			}
 			else {
 				c = step * c * 1 + (min(1, _ShadowTint) * step * (level - _Steps)) + (min(1, _HighlightTint) * step * (level));
@@ -144,7 +144,7 @@ Shader "Toon/Postorizer" {
 
 			#if defined(ANTIALIASING_OFF)
 
-			c = floor(diffuse / step + 1) * step * c;
+			c = step * c * (level + 1) + (min(1, _ShadowTint) * step * (level - _Steps)) + (min(1, _HighlightTint) * step * (level));
 
 			#endif
 
